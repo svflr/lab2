@@ -1,31 +1,46 @@
 ﻿#include <iostream>
-#include <vector>
 #include <fstream>
 #include <string>
+#include <limits> 
 
 using namespace std;
 
-// Структура для хранения информации о трубе
-struct Pipe {
-    string name;        // километровая отметка
-    double length;      // длина трубы
-    double diameter;    // диаметр трубы
-    bool in_repair;     // признак "в ремонте"
+const int MAX_PIPES = 100;  
+const int MAX_STATIONS = 100;  
 
-    // Функция для считывания данных трубы с консоли
+struct Pipe {
+    string name;
+    double length;
+    double diameter;
+    bool in_repair;
+
     void input() {
         cout << "Введите километровую отметку (название трубы): ";
-        cin >> ws; // для очистки буфера ввода перед вводом строки
+        cin >> ws;
         getline(cin, name);
+
         cout << "Введите длину трубы (км): ";
-        cin >> length;
+        while (!(cin >> length) || length <= 0) {
+            cout << "Ошибка! Введите корректное значение длины: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+
         cout << "Введите диаметр трубы (м): ";
-        cin >> diameter;
+        while (!(cin >> diameter) || diameter <= 0) {
+            cout << "Ошибка! Введите корректное значение диаметра: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+
         cout << "Труба в ремонте (1 - да, 0 - нет): ";
-        cin >> in_repair;
+        while (!(cin >> in_repair)) {
+            cout << "Ошибка! Введите 0 или 1: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
     }
 
-    // Функция для вывода данных трубы на консоль
     void output() const {
         cout << "Труба: " << name << endl;
         cout << "Длина: " << length << " км" << endl;
@@ -33,36 +48,51 @@ struct Pipe {
         cout << "В ремонте: " << (in_repair ? "Да" : "Нет") << endl;
     }
 
-    // Редактирование признака "в ремонте"
     void editRepair() {
         cout << "Труба в ремонте (1 - да, 0 - нет): ";
-        cin >> in_repair;
+        while (!(cin >> in_repair)) {
+            cout << "Ошибка! Введите 0 или 1: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
     }
 };
 
-// Структура для хранения информации о компрессорной станции (КС)
 struct CompressorStation {
-    string name;             // название
-    int total_workshops;      // общее количество цехов
-    int active_workshops;     // количество цехов в работе
-    double efficiency;        // эффективность
+    string name;
+    int total_workshops;
+    int active_workshops;
+    double efficiency;
 
-    // Функция для считывания данных КС с консоли
     void input() {
         cout << "Введите название КС: ";
-        cin >> ws; // для очистки буфера ввода
+        cin >> ws;
         getline(cin, name);
+
         cout << "Введите общее количество цехов: ";
-        cin >> total_workshops;
+        while (!(cin >> total_workshops) || total_workshops < 0) {
+            cout << "Ошибка! Введите корректное количество цехов: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+
         do {
             cout << "Введите количество цехов в работе: ";
-            cin >> active_workshops;
-        } while (active_workshops > total_workshops || active_workshops < 0);
+            while (!(cin >> active_workshops) || active_workshops < 0) {
+                cout << "Ошибка! Введите корректное количество цехов в работе: ";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        } while (active_workshops > total_workshops);
+
         cout << "Введите эффективность КС: ";
-        cin >> efficiency;
+        while (!(cin >> efficiency) || efficiency < 0 || efficiency > 100) {
+            cout << "Ошибка! Введите корректное значение эффективности (0-100): ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
     }
 
-    // Функция для вывода данных КС на консоль
     void output() const {
         cout << "КС: " << name << endl;
         cout << "Общее количество цехов: " << total_workshops << endl;
@@ -70,34 +100,36 @@ struct CompressorStation {
         cout << "Эффективность: " << efficiency << endl;
     }
 
-    // Запуск или останов цехов
     void editWorkshops() {
         int change;
         do {
             cout << "Введите новое количество цехов в работе (от 0 до " << total_workshops << "): ";
-            cin >> change;
+            while (!(cin >> change)) {
+                cout << "Ошибка! Введите корректное количество цехов в работе: ";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
         } while (change > total_workshops || change < 0);
         active_workshops = change;
     }
 };
 
-// Функции для сохранения и загрузки данных
-void saveToFile(const vector<Pipe>& pipes, const vector<CompressorStation>& stations, const string& filename) {
+void saveToFile(const Pipe pipes[], const CompressorStation stations[], int pipeCount, int stationCount, const string& filename) {
     ofstream fout(filename);
     if (fout.is_open()) {
-        fout << pipes.size() << endl;
-        for (const auto& pipe : pipes) {
-            fout << pipe.name << endl;
-            fout << pipe.length << endl;
-            fout << pipe.diameter << endl;
-            fout << pipe.in_repair << endl;
+        fout << pipeCount << endl;
+        for (int i = 0; i < pipeCount; ++i) {
+            fout << pipes[i].name << endl;
+            fout << pipes[i].length << endl;
+            fout << pipes[i].diameter << endl;
+            fout << pipes[i].in_repair << endl;
         }
-        fout << stations.size() << endl;
-        for (const auto& station : stations) {
-            fout << station.name << endl;
-            fout << station.total_workshops << endl;
-            fout << station.active_workshops << endl;
-            fout << station.efficiency << endl;
+        fout << stationCount << endl;
+        for (int i = 0; i < stationCount; ++i) {
+            fout << stations[i].name << endl;
+            fout << stations[i].total_workshops << endl;
+            fout << stations[i].active_workshops << endl;
+            fout << stations[i].efficiency << endl;
         }
         fout.close();
         cout << "Данные успешно сохранены в файл." << endl;
@@ -107,31 +139,24 @@ void saveToFile(const vector<Pipe>& pipes, const vector<CompressorStation>& stat
     }
 }
 
-void loadFromFile(vector<Pipe>& pipes, vector<CompressorStation>& stations, const string& filename) {
+void loadFromFile(Pipe pipes[], CompressorStation stations[], int& pipeCount, int& stationCount, const string& filename) {
     ifstream fin(filename);
     if (fin.is_open()) {
-        size_t pipeCount, stationCount;
         fin >> pipeCount;
-        pipes.clear();
-        for (size_t i = 0; i < pipeCount; ++i) {
-            Pipe pipe;
+        for (int i = 0; i < pipeCount; ++i) {
             fin >> ws;
-            getline(fin, pipe.name);
-            fin >> pipe.length;
-            fin >> pipe.diameter;
-            fin >> pipe.in_repair;
-            pipes.push_back(pipe);
+            getline(fin, pipes[i].name);
+            fin >> pipes[i].length;
+            fin >> pipes[i].diameter;
+            fin >> pipes[i].in_repair;
         }
         fin >> stationCount;
-        stations.clear();
-        for (size_t i = 0; i < stationCount; ++i) {
-            CompressorStation station;
+        for (int i = 0; i < stationCount; ++i) {
             fin >> ws;
-            getline(fin, station.name);
-            fin >> station.total_workshops;
-            fin >> station.active_workshops;
-            fin >> station.efficiency;
-            stations.push_back(station);
+            getline(fin, stations[i].name);
+            fin >> stations[i].total_workshops;
+            fin >> stations[i].active_workshops;
+            fin >> stations[i].efficiency;
         }
         fin.close();
         cout << "Данные успешно загружены из файла." << endl;
@@ -142,8 +167,9 @@ void loadFromFile(vector<Pipe>& pipes, vector<CompressorStation>& stations, cons
 }
 
 int main() {
-    vector<Pipe> pipes;
-    vector<CompressorStation> stations;
+    Pipe pipes[MAX_PIPES];
+    CompressorStation stations[MAX_STATIONS];
+    int pipeCount = 0, stationCount = 0;
     string filename = "data.txt";
 
     while (true) {
@@ -159,41 +185,56 @@ int main() {
         cout << "Выберите действие: ";
 
         int choice;
-        cin >> choice;
+        while (!(cin >> choice)) {
+            cout << "Ошибка! Введите число: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
 
         switch (choice) {
         case 1: {
-            Pipe pipe;
-            pipe.input();
-            pipes.push_back(pipe);
+            if (pipeCount < MAX_PIPES) {
+                pipes[pipeCount].input();
+                pipeCount++;
+            }
+            else {
+                cout << "Достигнут предел количества труб.\n";
+            }
             break;
         }
         case 2: {
-            CompressorStation station;
-            station.input();
-            stations.push_back(station);
+            if (stationCount < MAX_STATIONS) {
+                stations[stationCount].input();
+                stationCount++;
+            }
+            else {
+                cout << "Достигнут предел количества КС.\n";
+            }
             break;
         }
         case 3: {
             cout << "Трубы:\n";
-            for (const auto& pipe : pipes)
-                pipe.output();
+            for (int i = 0; i < pipeCount; ++i)
+                pipes[i].output();
             cout << "\nКомпрессорные станции:\n";
-            for (const auto& station : stations)
-                station.output();
+            for (int i = 0; i < stationCount; ++i)
+                stations[i].output();
             break;
         }
         case 4: {
-            if (!pipes.empty()) {
-                for (size_t i = 0; i < pipes.size(); ++i) {
+            if (pipeCount > 0) {
+                for (int i = 0; i < pipeCount; ++i) {
                     cout << i + 1 << ". ";
                     pipes[i].output();
                 }
                 cout << "Выберите трубу для редактирования: ";
-                size_t index;
-                cin >> index;
-                if (index > 0 && index <= pipes.size())
-                    pipes[index - 1].editRepair();
+                int index;
+                while (!(cin >> index) || index <= 0 || index > pipeCount) {
+                    cout << "Ошибка! Введите корректный индекс: ";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
+                pipes[index - 1].editRepair();
             }
             else {
                 cout << "Нет доступных труб для редактирования.\n";
@@ -201,16 +242,19 @@ int main() {
             break;
         }
         case 5: {
-            if (!stations.empty()) {
-                for (size_t i = 0; i < stations.size(); ++i) {
+            if (stationCount > 0) {
+                for (int i = 0; i < stationCount; ++i) {
                     cout << i + 1 << ". ";
                     stations[i].output();
                 }
                 cout << "Выберите КС для редактирования: ";
-                size_t index;
-                cin >> index;
-                if (index > 0 && index <= stations.size())
-                    stations[index - 1].editWorkshops();
+                int index;
+                while (!(cin >> index) || index <= 0 || index > stationCount) {
+                    cout << "Ошибка! Введите корректный индекс: ";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
+                stations[index - 1].editWorkshops();
             }
             else {
                 cout << "Нет доступных КС для редактирования.\n";
@@ -218,10 +262,10 @@ int main() {
             break;
         }
         case 6:
-            saveToFile(pipes, stations, filename);
+            saveToFile(pipes, stations, pipeCount, stationCount, filename);
             break;
         case 7:
-            loadFromFile(pipes, stations, filename);
+            loadFromFile(pipes, stations, pipeCount, stationCount, filename);
             break;
         case 0:
             return 0;
