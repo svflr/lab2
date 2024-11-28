@@ -119,19 +119,22 @@ void show_station(const Station& CS) {
 }
 
 void view_all(const Pipe& P, const Station& CS) {
-    if (!P.Name.empty()) {
+    if (!P.Name.empty() && CS.Name.empty()) {
         show_pipe(P);
     }
-    else {
-        cout << "Труба ещё не добавлена!" << endl;
+    else if (P.Name.empty() && !CS.Name.empty()) {
+        show_station(CS);
     }
-    if (!CS.Name.empty()) {
+    else if (!P.Name.empty() && !CS.Name.empty()) {
+        show_pipe(P);
         show_station(CS);
     }
     else {
-        cout << "Станция ещё не добавлена!" << endl;
+        cout << "Данные отсутствуют!" << endl;
     }
 }
+
+
 
 void edit_pipe(Pipe& P) {
     if (!P.Name.empty()) {
@@ -220,6 +223,9 @@ void save(const Pipe& P, const Station& CS) {
 void load(Pipe& P, Station& CS) {
     ifstream in("data.txt");
     if (in.is_open()) {
+        P = {};
+        CS = {};
+
         string type;
         while (getline(in, type)) {
             if (type == "Труба") {
@@ -240,6 +246,7 @@ void load(Pipe& P, Station& CS) {
     }
     in.close();
 }
+
 
 int main() {
     Pipe P;
