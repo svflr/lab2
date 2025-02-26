@@ -1,265 +1,217 @@
-﻿#include <iostream>
+﻿#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
 #include <string>
+#include <vector>
 #include <fstream>
+#include <unordered_map>
+#include <algorithm>
+#include <ctime>
+#include <sstream>
 
 using namespace std;
 
 struct Pipe {
-    string Name;
+    int id;
+    string name;
     float length;
     int diameter;
     bool repair;
 };
 
 struct Station {
-    string Name;
+    int id;
+    string name;
     int workshops;
-    int workshopsinwork;
+    int workshopsInWork;
     int effectiveness;
 };
 
-int check_int(int max, int low) {
-    int z;
-    cin >> z;
+vector<Pipe> pipes;
+vector<Station> stations;
+int pipeID = 1, stationID = 1;
+
+void logAction(const string& action) {
+    ofstream logFile("log.txt", ios::app);
+    time_t now = time(0);
+    logFile << ctime(&now) << action << endl;
+}
+
+int getIntInput(int min, int max = 0) {
+    int value;
+    while (!(cin >> value) || value < min || (max != 0 && value > max)) {
+        cin.clear();
+        cin.ignore(10000, '\n');
+        cout << "Ошибка. Попробуйте ещё раз: ";
+    }
     cin.ignore();
-    while (true) {
-        if (cin.fail()) {
-            cout << "Ошибка. Введено не целое число или символ! Попробуйте ещё раз: ";
-            cin.clear();
-            while (cin.get() != '\n');
-        }
-        else if (z < low) {
-            cout << "Ошибка. Введено отрицательное число или ноль! Попробуйте ещё раз: ";
-        }
-        else if (max != 0 && z > max) {
-            cout << "Ошибка. Введено число больше допустимого значения! Попробуйте ещё раз: ";
-        }
-        else {
-            break;
-        }
-        cin >> z;
-        cin.ignore();
-    }
-    return z;
+    return value;
 }
 
-float floatcheck(int max, float low) {
-    float z;
-    cin >> z;
+float getFloatInput(float min) {
+    float value;
+    while (!(cin >> value) || value < min) {
+        cin.clear();
+        cin.ignore(10000, '\n');
+        cout << "Ошибка. Попробуйте ещё раз: ";
+    }
     cin.ignore();
-    while (true) {
-        if (cin.fail()) {
-            cout << "Ошибка. Введено не дробное число или символ! Попробуйте ещё раз: ";
-            cin.clear();
-            while (cin.get() != '\n');
-        }
-        else if (z < low) {
-            cout << "Ошибка. Введено отрицательное число или ноль! Попробуйте ещё раз: ";
-        }
-        else if (max != 0 && z > max) {
-            cout << "Ошибка. Введено число больше допустимого значения! Попробуйте ещё раз: ";
-        }
-        else {
-            break;
-        }
-        cin >> z;
+    return value;
+}
+
+void addPipe() {
+    Pipe p;
+    p.id = pipeID++;
+    cout << "Название трубы: ";
+    cin.ignore();
+    getline(cin, p.name);
+    cout << "Длина (км): ";
+    p.length = getFloatInput(0.1);
+    cout << "Диаметр (мм): ";
+    p.diameter = getIntInput(1);
+    cout << "В ремонте? (1 - да, 0 - нет): ";
+    p.repair = getIntInput(0, 1);
+    pipes.push_back(p);
+    logAction("Добавлена труба ID: " + to_string(p.id));
+}
+
+void addStation() {
+    Station s;
+    s.id = stationID++;
+    cout << "Название станции: ";
+    cin.ignore();
+    getline(cin, s.name);
+    cout << "Количество цехов: ";
+    s.workshops = getIntInput(1);
+    cout << "Цехов в работе: ";
+    s.workshopsInWork = getIntInput(0, s.workshops);
+    cout << "Эффективность (0-100): ";
+    s.effectiveness = getIntInput(0, 100);
+    stations.push_back(s);
+    logAction("Добавлена станция ID: " + to_string(s.id));
+}
+
+void viewPipes() {
+    for (const auto& p : pipes)
+        cout << "Труба [ID: " << p.id << "] " << p.name << " | Длина: " << p.length << " | Диаметр: " << p.diameter << " | В ремонте: " << (p.repair ? "Да" : "Нет") << endl;
+}
+
+void viewStations() {
+    for (const auto& s : stations)
+        cout << "Станция [ID: " << s.id << "] " << s.name << " | Цехов: " << s.workshops << " | В работе: " << s.workshopsInWork << " | Эффективность: " << s.effectiveness << endl;
+}
+
+void deletePipe() {
+    cout << "Введите ID трубы для удаления: ";
+    int id = getIntInput(1);
+    pipes.erase(remove_if(pipes.begin(), pipes.end(), [id](const Pipe& p) { return p.id == id; }), pipes.end());
+}
+
+void deleteStation() {
+    cout << "Введите ID станции для удаления: ";
+    int id = getIntInput(1);
+    stations.erase(remove_if(stations.begin(), stations.end(), [id](const Station& s) { return s.id == id; }), stations.end());
+}
+
+void searchPipes() {
+    cout << "Фильтр труб: 1 - по названию, 2 - по ремонту: ";
+    int choice = getIntInput(1, 2);
+    if (choice == 1) {
+        string name;
+        cout << "Введите название трубы: ";
         cin.ignore();
-    }
-    return z;
-}
-
-int menu() {
-    cout << "Меню" << endl
-        << "1) Добавить трубу" << endl
-        << "2) Добавить станцию" << endl
-        << "3) Просмотреть объекты" << endl
-        << "4) Редактировать трубу" << endl
-        << "5) Редактировать станцию" << endl
-        << "6) Сохранить данные" << endl
-        << "7) Загрузить данные" << endl
-        << "0) Выход" << endl
-        << "Введите команду (0 до 7): ";
-    return check_int(7, 0);
-}
-
-void new_pipe(Pipe& P) {
-    cout << "Введите название трубы: ";
-    getline(cin, P.Name);
-    cout << "Введите длину трубы в километрах: ";
-    P.length = floatcheck(0, 0.1);
-    cout << "Введите диаметр трубы в миллиметрах: ";
-    P.diameter = check_int(0, 1);
-    cout << "Выберите статус трубы:\n0) Не в ремонте\n1) В ремонте\n";
-    P.repair = check_int(1, 0);
-    cout << "Труба создана: " << endl
-        << "Название трубы: " << P.Name << "; Длина трубы: " << P.length << "; Диаметр трубы: " << P.diameter << "; Статус 'в ремонте': " << boolalpha << P.repair << endl;
-}
-
-void new_station(Station& CS) {
-    cout << "Введите название станции: ";
-    getline(cin, CS.Name);
-    cout << "Введите количество цехов: ";
-    CS.workshops = check_int(0, 1);
-    cout << "Введите количество цехов в работе: ";
-    CS.workshopsinwork = check_int(CS.workshops, 0);
-    cout << "Введите коэффициент эффективности станции (от 0 до 100): ";
-    CS.effectiveness = check_int(100, 0);
-    cout << "Станция создана: " << endl
-        << "Название станции: " << CS.Name << "; Количество цехов: " << CS.workshops << "; Цехов в работе: " << CS.workshopsinwork << "; Коэффициент эффективности: " << CS.effectiveness << endl;
-}
-
-void show_pipe(const Pipe& P) {
-    cout << "Труба: " << endl
-        << "Название трубы: " << P.Name << "; Длина трубы: " << P.length << "; Диаметр трубы: " << P.diameter << "; Статус 'в ремонте': " << boolalpha << P.repair << endl;
-}
-
-void show_station(const Station& CS) {
-    cout << "Станция: " << endl
-        << "Название станции: " << CS.Name << "; Количество цехов: " << CS.workshops << "; Цехов в работе: " << CS.workshopsinwork << "; Коэффициент эффективности: " << CS.effectiveness << endl;
-}
-
-void view_all(const Pipe& P, const Station& CS) {
-    if (!P.Name.empty() && CS.Name.empty()) {
-        show_pipe(P);
-    }
-    else if (P.Name.empty() && !CS.Name.empty()) {
-        show_station(CS);
-    }
-    else if (!P.Name.empty() && !CS.Name.empty()) {
-        show_pipe(P);
-        show_station(CS);
+        getline(cin, name);
+        for (const auto& p : pipes)
+            if (p.name.find(name) != string::npos)
+                cout << "Труба [ID: " << p.id << "] " << p.name << endl;
     }
     else {
-        cout << "Данные отсутствуют!" << endl;
+        cout << "В ремонте? (1 - да, 0 - нет): ";
+        bool status = getIntInput(0, 1);
+        for (const auto& p : pipes)
+            if (p.repair == status)
+                cout << "Труба [ID: " << p.id << "] " << p.name << endl;
     }
 }
 
+void searchStations() {
+    cout << "Фильтр станций: 1 - по названию, 2 - по проценту незадействованных цехов: ";
+    int choice = getIntInput(1, 2);
 
-
-void edit_pipe(Pipe& P) {
-    if (!P.Name.empty()) {
-        cout << "Выберите параметр для редактирования:\n"
-            << "1) Название трубы\n"
-            << "2) Длина трубы\n"
-            << "3) Диаметр трубы\n"
-            << "4) Статус 'на ремонте'\n"
-            << "0) Вернуться в меню\n";
-        int choice = check_int(4, 0);
-        switch (choice) {
-        case 1:
-            cout << "Введите новое название трубы: ";
-            getline(cin, P.Name);
-            break;
-        case 2:
-            cout << "Введите новую длину трубы: ";
-            P.length = floatcheck(0, 0.1);
-            break;
-        case 3:
-            cout << "Введите новый диаметр трубы: ";
-            P.diameter = check_int(0, 1);
-            break;
-        case 4:
-            cout << "Выберите новый статус трубы:\n0) Не на ремонте\n1) На ремонте\n";
-            P.repair = check_int(1, 0);
-            break;
-        }
-    }
-    else {
-        cout << "Труба ещё не добавлена!" << endl;
-    }
-}
-
-void edit_station(Station& CS) {
-    if (!CS.Name.empty()) {
-        cout << "Выберите параметр для редактирования:\n"
-            << "1) Название станции\n"
-            << "2) Количество цехов\n"
-            << "3) Коэффициент эффективности\n"
-            << "4) Количество цехов в работе\n"
-            << "0) Вернуться в меню\n";
-        int choice = check_int(4, 0);
-        switch (choice) {
-        case 1:
-            cout << "Введите новое название станции: ";
-            getline(cin, CS.Name);
-            break;
-        case 2:
-            cout << "Введите новое количество цехов: ";
-            CS.workshops = check_int(0, 1);
-            CS.workshopsinwork = min(CS.workshopsinwork, CS.workshops);
-            break;
-        case 3:
-            cout << "Введите новый коэффициент эффективности (от 0 до 100): ";
-            CS.effectiveness = check_int(100, 0);
-            break;
-        case 4:
-            cout << "Введите новое количество цехов в работе: ";
-            CS.workshopsinwork = check_int(CS.workshops, 0);
-            break;
-        }
-    }
-    else {
-        cout << "Станция ещё не добавлена!" << endl;
-    }
-}
-
-void save(const Pipe& P, const Station& CS) {
-    ofstream out("data.txt");
-    if (out.is_open()) {
-        if (!P.Name.empty()) {
-            out << "Труба\n" << P.Name << '\n' << P.length << ' ' << P.diameter << ' ' << P.repair << '\n';
-        }
-        if (!CS.Name.empty()) {
-            out << "Станция\n" << CS.Name << '\n' << CS.workshops << ' ' << CS.workshopsinwork << ' ' << CS.effectiveness << '\n';
-        }
-        cout << "Данные сохранены!" << endl;
-    }
-    else {
-        cout << "Ошибка сохранения данных!" << endl;
-    }
-    out.close();
-}
-
-void load(Pipe& P, Station& CS) {
-    ifstream in("data.txt");
-    if (in.is_open()) {
-        P = {};
-        CS = {};
-
-        string type;
-        while (getline(in, type)) {
-            if (type == "Труба") {
-                getline(in, P.Name);
-                in >> P.length >> P.diameter >> P.repair;
-                in.ignore();
-            }
-            else if (type == "Станция") {
-                getline(in, CS.Name);
-                in >> CS.workshops >> CS.workshopsinwork >> CS.effectiveness;
-                in.ignore();
+    if (choice == 1) {
+        string name;
+        cout << "Введите название станции: ";
+        cin.ignore();
+        getline(cin, name);
+        bool found = false;
+        for (const auto& s : stations) {
+            if (s.name.find(name) != string::npos) {
+                double freePercentage = (100.0 * (s.workshops - s.workshopsInWork) / s.workshops);
+                cout << "Станция [ID: " << s.id << "] " << s.name << " | Цехов: " << s.workshops
+                    << " | В работе: " << s.workshopsInWork
+                    << " | Незадействовано: " << freePercentage << "%\n";
+                found = true;
             }
         }
-        cout << "Данные загружены!" << endl;
+        if (!found) cout << "Станции с таким названием не найдены.\n";
     }
     else {
-        cout << "Ошибка загрузки данных!" << endl;
+        cout << "Сортировать станции по незадействованным цехам? (1 - по убыванию, 2 - по возрастанию): ";
+        int sortOrder = getIntInput(1, 2);
+
+        sort(stations.begin(), stations.end(), [sortOrder](const Station& a, const Station& b) {
+            double freeA = (100.0 * (a.workshops - a.workshopsInWork) / a.workshops);
+            double freeB = (100.0 * (b.workshops - b.workshopsInWork) / b.workshops);
+            return sortOrder == 1 ? freeA > freeB : freeA < freeB;
+            });
+
+        cout << "Список станций после сортировки:\n";
+        for (const auto& s : stations) {
+            double freePercentage = (100.0 * (s.workshops - s.workshopsInWork) / s.workshops);
+            cout << "Станция [ID: " << s.id << "] " << s.name << " | Цехов: " << s.workshops
+                << " | В работе: " << s.workshopsInWork
+                << " | Незадействовано: " << freePercentage << "%\n";
+        }
     }
-    in.close();
 }
 
+
+
+
+void batchEditPipes() {
+    cout << "Изменить статус ремонта всех труб? (1 - да, 0 - выбрать): ";
+    int choice = getIntInput(0, 1);
+    cout << "Введите новый статус ремонта (1 - в ремонте, 0 - не в ремонте): ";
+    bool newStatus = getIntInput(0, 1);
+    if (choice == 1) {
+        for (auto& p : pipes) p.repair = newStatus;
+    }
+    else {
+        cout << "Введите ID труб через пробел (0 - завершить): ";
+        string input;
+        cin.ignore();
+        getline(cin, input);
+        istringstream iss(input);
+        int id;
+        while (iss >> id && id != 0) {
+            for (auto& p : pipes)
+                if (p.id == id) p.repair = newStatus;
+        }
+    }
+}
 
 int main() {
-    Pipe P;
-    Station CS;
     while (true) {
-        switch (menu()) {
-        case 1: new_pipe(P); break;
-        case 2: new_station(CS); break;
-        case 3: view_all(P, CS); break;
-        case 4: edit_pipe(P); break;
-        case 5: edit_station(CS); break;
-        case 6: save(P, CS); break;
-        case 7: load(P, CS); break;
+        cout << "1) Добавить трубу\n2) Добавить станцию\n3) Просмотреть трубы\n4) Просмотреть станции\n5) Поиск труб\n6) Поиск станций\n7) Удалить трубу\n8) Удалить станцию\n9) Пакетное редактирование труб\n0) Выход\nВыберите действие: ";
+        switch (getIntInput(0, 9)) {
+        case 1: addPipe(); break;
+        case 2: addStation(); break;
+        case 3: viewPipes(); break;
+        case 4: viewStations(); break;
+        case 5: searchPipes(); break;
+        case 6: searchStations(); break;
+        case 7: deletePipe(); break;
+        case 8: deleteStation(); break;
+        case 9: batchEditPipes(); break;
         case 0: return 0;
         }
     }
